@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import com.example.dailyquiz.api.TriviaQuestion
 import com.example.dailyquiz.api.fetchTriviaQuestions
+import com.example.dailyquiz.models.QuizHistoryEntry
 import com.example.dailyquiz.ui.theme.BackgroundColor
 
 class MainActivity : ComponentActivity() {
@@ -42,9 +43,24 @@ fun AppRoot() {
     var screenState by remember { mutableStateOf<ScreenState>(ScreenState.Welcome) }
 
     when (val state = screenState) {
-        is ScreenState.Welcome -> DailyQuizMainScreen(onStartClick = {
-            screenState = ScreenState.Loading
-        })
+        is ScreenState.Welcome -> DailyQuizMainScreen(
+            onStartClick = { screenState = ScreenState.Loading },
+            onHistoryClick = {
+                // Примерные данные истории:
+                screenState = ScreenState.History(
+                    entries = listOf(
+                        QuizHistoryEntry("Викторина 1", "01.08.2025", "01:32", 3),
+                        QuizHistoryEntry("Викторина 2", "30.07.2025", "01:10", 5)
+                    )
+                )
+            }
+        )
+
+        is ScreenState.History -> HistoryScreen(
+            entries = state.entries,
+            onBack = { screenState = ScreenState.Welcome }
+        )
+
         is ScreenState.Loading -> {
             LoaderScreen()
             LaunchedEffect(Unit) {
@@ -52,36 +68,36 @@ fun AppRoot() {
                 screenState = ScreenState.Quiz(questions)
             }
         }
+
         is ScreenState.Quiz -> QuizScreen(
             questions = state.questions,
             onFinish = { score ->
                 screenState = ScreenState.Result(score, state.questions.size)
             },
-            onBack = { screenState = ScreenState.Welcome } // ← добавлено
+            onBack = { screenState = ScreenState.Welcome }
         )
 
         is ScreenState.Result -> ResultScreen(
             score = state.score,
             total = state.total,
-            onRestart = {
-                screenState = ScreenState.Loading
-            }
+            onRestart = { screenState = ScreenState.Loading }
         )
-
-
     }
 }
+
 
 sealed class ScreenState {
     object Welcome : ScreenState()
     object Loading : ScreenState()
     data class Quiz(val questions: List<TriviaQuestion>) : ScreenState()
     data class Result(val score: Int, val total: Int) : ScreenState()
+    data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
+
 }
 
 
 @Composable
-fun DailyQuizMainScreen(onStartClick: () -> Unit) {
+fun DailyQuizMainScreen(onStartClick: () -> Unit, onHistoryClick: () -> Unit) {
 
     Box(
         modifier = Modifier
@@ -106,7 +122,7 @@ fun DailyQuizMainScreen(onStartClick: () -> Unit) {
                 horizontalArrangement = Arrangement.Center
             ) {
                 OutlinedButton(
-                    onClick = { /* TODO */ },
+                    onClick = { onHistoryClick() },
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
                 ) {
