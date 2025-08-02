@@ -28,6 +28,8 @@ import com.example.dailyquiz.api.TriviaQuestion
 import com.example.dailyquiz.api.fetchTriviaQuestions
 import com.example.dailyquiz.models.QuizHistoryEntry
 import com.example.dailyquiz.ui.theme.BackgroundColor
+import java.text.SimpleDateFormat
+import java.util.*
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -41,26 +43,13 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoot() {
     var screenState by remember { mutableStateOf<ScreenState>(ScreenState.Welcome) }
+    val history = remember { mutableStateListOf<QuizHistoryEntry>() } // ← добавили
 
     when (val state = screenState) {
         is ScreenState.Welcome -> DailyQuizMainScreen(
             onStartClick = { screenState = ScreenState.Loading },
-            onHistoryClick = {
-                // Примерные данные истории:
-                screenState = ScreenState.History(
-                    entries = listOf(
-                        QuizHistoryEntry("Викторина 1", "01.08.2025", "01:32", 3),
-                        QuizHistoryEntry("Викторина 2", "30.07.2025", "01:10", 5)
-                    )
-                )
-            }
+            onHistoryClick = { screenState = ScreenState.History }
         )
-
-        is ScreenState.History -> HistoryScreen(
-            entries = state.entries,
-            onBack = { screenState = ScreenState.Welcome }
-        )
-
         is ScreenState.Loading -> {
             LoaderScreen()
             LaunchedEffect(Unit) {
@@ -68,22 +57,35 @@ fun AppRoot() {
                 screenState = ScreenState.Quiz(questions)
             }
         }
-
         is ScreenState.Quiz -> QuizScreen(
             questions = state.questions,
             onFinish = { score ->
+                // Сохранение результата
+                val quizNumber = history.size + 1
+                val entry = QuizHistoryEntry(
+                    title = "Quiz $quizNumber",
+                    date = getCurrentDate(),
+                    time = getCurrentTime(),
+                    stars = calculateStars(score, state.questions.size)
+                )
+
+                history.add(0, entry)
                 screenState = ScreenState.Result(score, state.questions.size)
             },
             onBack = { screenState = ScreenState.Welcome }
         )
-
         is ScreenState.Result -> ResultScreen(
             score = state.score,
             total = state.total,
             onRestart = { screenState = ScreenState.Loading }
         )
+        is ScreenState.History -> HistoryScreen(
+            entries = history,
+            onBack = { screenState = ScreenState.Welcome }
+        )
     }
 }
+
 
 
 sealed class ScreenState {
@@ -91,7 +93,8 @@ sealed class ScreenState {
     object Loading : ScreenState()
     data class Quiz(val questions: List<TriviaQuestion>) : ScreenState()
     data class Result(val score: Int, val total: Int) : ScreenState()
-    data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
+//    data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
+    object History : ScreenState()
 
 }
 
@@ -215,6 +218,28 @@ fun LoaderScreen() {
                 strokeWidth = 4.dp
             )
         }
+    }
+}
+
+fun getCurrentDate(): String {
+    val format = SimpleDateFormat("dd.MM.yyyy", Locale.getDefault())
+    return format.format(Date())
+}
+
+fun getCurrentTime(): String {
+    val format = SimpleDateFormat("HH:mm", Locale.getDefault())
+    return format.format(Date())
+}
+
+fun calculateStars(score: Int, total: Int): Int {
+    val percentage = score.toFloat() / total
+    return when {
+        percentage >= 1f -> 5
+        percentage >= 0.8f -> 4
+        percentage >= 0.6f -> 3
+        percentage >= 0.4f -> 2
+        percentage >= 0.2f -> 1
+        else -> 0
     }
 }
 
