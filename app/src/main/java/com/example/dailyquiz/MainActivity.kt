@@ -56,8 +56,10 @@ fun AppRoot() {
             questions = state.questions,
             onFinish = { score ->
                 screenState = ScreenState.Result(score, state.questions.size)
-            }
+            },
+            onBack = { screenState = ScreenState.Welcome } // ← добавлено
         )
+
         is ScreenState.Result -> ResultScreen(
             score = state.score,
             total = state.total,

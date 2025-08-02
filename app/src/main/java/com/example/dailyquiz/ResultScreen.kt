@@ -31,11 +31,13 @@ fun ResultScreen(score: Int, total: Int, onRestart: () -> Unit) {
     }
 
     val message = when (stars) {
-        5 -> "Идеально!"
+        5 -> "Идеально!\n" +
+                "${score}/$total — вы ответили на всё правильно. Это блестящий результат!"
         4 -> "Почти идеально!\n${score}/$total — очень близко к совершенству. Ещё один шаг!"
-        3 -> "Неплохо!"
-        2 -> "Можно лучше."
-        else -> "Попробуй ещё раз!"
+        3 -> "Хороший результат!\n${score}/$total — вы на верном пути. Продолжайте тренироваться!"
+        2 -> "Есть над чем поработать\n${score}/$total — не расстраивайтесь, попробуйте ещё раз!"
+        1 -> "Сложный вопрос?\n${score}/$total — иногда просто не ваш день. Следующая попытка будет лучше!"
+        else -> "Бывает и так!\n${score}/$total — не отчаивайтесь. Начните заново и удивите себя!\n"
     }
 
     Box(
@@ -124,5 +126,5 @@ fun ResultScreen(score: Int, total: Int, onRestart: () -> Unit) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewResultScreen() {
-    ResultScreen(score = 3, total = 5, onRestart = {})
+    ResultScreen(score = 4, total = 5, onRestart = {})
 }

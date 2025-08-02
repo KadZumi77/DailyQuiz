@@ -2,6 +2,7 @@ package com.example.dailyquiz
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.LocalActivity
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.*
 import com.example.dailyquiz.api.TriviaQuestion
@@ -23,8 +24,11 @@ fun QuizActivityContent() {
     var isFinished by remember { mutableStateOf(false) }
     var correctAnswersCount by remember { mutableStateOf(0) }
     var shouldReload by remember { mutableStateOf(true) }
+    val activity = LocalActivity.current
 
-    // Загружаем вопросы при запуске или перезапуске
+
+
+    // Загружаем вопросы при запуске или перезапускe
     LaunchedEffect(shouldReload) {
         isLoading = true
         questions = fetchTriviaQuestions()
@@ -48,6 +52,9 @@ fun QuizActivityContent() {
             onFinish = { score ->
                 correctAnswersCount = score
                 isFinished = true
+            },
+            onBack = {
+                activity?.finish()
             }
         )
     }

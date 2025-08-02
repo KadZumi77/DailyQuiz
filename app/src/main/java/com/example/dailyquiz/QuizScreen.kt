@@ -19,12 +19,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dailyquiz.api.TriviaQuestion
 import com.example.dailyquiz.ui.theme.BackgroundColor
+import com.example.dailyquiz.ui.theme.CorrectAnswerColor
+import com.example.dailyquiz.ui.theme.IncorrectAnswerColor
 
 @Composable
-fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) -> Unit) {
+fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) -> Unit, onBack: () -> Unit) {
     var currentIndex by remember { mutableStateOf(0) }
     var selectedAnswer by remember { mutableStateOf<String?>(null) }
     var correctCount by remember { mutableStateOf(0) }
+    var showAnswerResult by remember { mutableStateOf(false) }
+    var isCorrectAnswer by remember { mutableStateOf(false) }
+    var triggerNext by remember { mutableStateOf(false) }
 
 
     val question = questions[currentIndex]
@@ -32,6 +37,20 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
 
     val allAnswers = remember(question) {
         (question.incorrect_answers + question.correct_answer).shuffled()
+    }
+
+    LaunchedEffect(triggerNext) {
+        if (triggerNext) {
+            kotlinx.coroutines.delay(1500)
+            if (currentIndex + 1 < questions.size) {
+                currentIndex++
+                selectedAnswer = null
+                showAnswerResult = false
+                triggerNext = false
+            } else {
+                onFinish(correctCount)
+            }
+        }
     }
 
     Box(
@@ -48,12 +67,31 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
         ) {
             Spacer(modifier = Modifier.height(40.dp))
 
-            // Логотип
-            Image(
-                painter = painterResource(id = R.drawable.logo),
-                contentDescription = "DAILYQUIZ",
-                modifier = Modifier.height(60.dp)
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 16.dp, bottom = 16.dp)
+            ) {
+                IconButton(
+                    onClick = { onBack() },
+                    modifier = Modifier.align(Alignment.CenterStart)
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.arrow_back_icon),
+                        contentDescription = "Назад",
+                        tint = Color.White
+                    )
+                }
+
+                Image(
+                    painter = painterResource(id = R.drawable.logo),
+                    contentDescription = "DAILYQUIZ",
+                    modifier = Modifier
+                        .height(60.dp)
+                        .align(Alignment.Center)
+                )
+            }
+
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -87,19 +125,37 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                     Spacer(modifier = Modifier.height(24.dp))
 
                     allAnswers.forEach { answer ->
+                        val isSelected = selectedAnswer == answer
+                        val isCorrect = answer == question.correct_answer
+
+                        val backgroundColor = when {
+                            showAnswerResult && isSelected && isCorrect -> Color(0xFFDFF5DD) // зелёный фон
+                            showAnswerResult && isSelected && !isCorrect -> Color(0xFFFFEAEA) // красный фон
+                            else -> Color(0xFFF5F5F5)
+                        }
+
+                        val borderColor = when {
+                            showAnswerResult && isSelected && isCorrect -> Color(0xFF4CAF50) // зелёная рамка
+                            showAnswerResult && isSelected && !isCorrect -> Color(0xFFFF5252) // красная рамка
+                            else -> Color.LightGray
+                        }
+
+                        val radioColor = when {
+                            showAnswerResult && isSelected && isCorrect -> Color(0xFF4CAF50)
+                            showAnswerResult && isSelected && !isCorrect -> Color(0xFFFF5252)
+                            else -> Color.Gray
+                        }
+
+                        val textColor = Color.Black
+
                         OutlinedButton(
-                            onClick = { selectedAnswer = answer },
+                            onClick = { if (!showAnswerResult) selectedAnswer = answer },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
-                                backgroundColor = if (selectedAnswer == answer) Color(0xFFEAE6FF) else Color(
-                                    0xFFF5F5F5
-                                ),
-                                contentColor = Color.Black
+                                backgroundColor = backgroundColor,
+                                contentColor = textColor
                             ),
-                            border = if (selectedAnswer == answer)
-                                BorderStroke(2.dp, BackgroundColor)
-                            else
-                                BorderStroke(1.dp, Color.LightGray),
+                            border = BorderStroke(2.dp, borderColor),
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 10.dp),
@@ -111,46 +167,50 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 RadioButton(
-                                    selected = selectedAnswer == answer,
-                                    onClick = { selectedAnswer = answer },
+                                    selected = isSelected,
+                                    onClick = {
+                                        if (!showAnswerResult) selectedAnswer = answer
+                                    },
                                     colors = RadioButtonDefaults.colors(
-                                        selectedColor = BackgroundColor
+                                        selectedColor = radioColor,
+                                        unselectedColor = radioColor,
+                                        disabledColor = Color.Gray
                                     )
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = answer,
                                     modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Start
+                                    textAlign = TextAlign.Start,
+                                    color = textColor
                                 )
                             }
                         }
                     }
 
+
+
                     Spacer(modifier = Modifier.height(24.dp))
 
                     Button(
                         onClick = {
-                            if (selectedAnswer == question.correct_answer) {
-                                correctCount++
-                            }
+                            showAnswerResult = true
+                            isCorrectAnswer = selectedAnswer == question.correct_answer
 
-                            if (currentIndex + 1 < questions.size) {
-                                currentIndex++
-                                selectedAnswer = null
-                            } else {
-                                onFinish(correctCount)
-                            }
+                            if (isCorrectAnswer) correctCount++
+
+                            triggerNext = true
                         },
-                        enabled = selectedAnswer != null,
+                        enabled = selectedAnswer != null && !showAnswerResult,
                         colors = ButtonDefaults.buttonColors(
-                            backgroundColor = if (selectedAnswer != null) BackgroundColor else Color.Gray
+                            backgroundColor = if (selectedAnswer != null && !showAnswerResult) BackgroundColor else Color.Gray
                         ),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("ДАЛЕЕ", color = Color.White, fontWeight = FontWeight.Bold)
                     }
+
                 }
             }
 
@@ -177,6 +237,7 @@ fun QuizScreenPreview() {
 
     QuizScreen(
         questions = listOf(sampleQuestion),
-        onFinish = {}
+        onFinish = {},
+        onBack = {}
     )
 }
