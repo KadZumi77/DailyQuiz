@@ -1,11 +1,11 @@
 package com.example.dailyquiz
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -14,8 +14,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -24,7 +22,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import com.example.dailyquiz.api.TriviaQuestion
+import com.example.dailyquiz.api.fetchTriviaQuestions
 import com.example.dailyquiz.ui.theme.BackgroundColor
 
 class MainActivity : ComponentActivity() {
@@ -38,19 +39,48 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun AppRoot() {
-    var isLoading by remember { mutableStateOf(false) }
+    var screenState by remember { mutableStateOf<ScreenState>(ScreenState.Welcome) }
 
-    if (isLoading) {
-        LoaderScreen()
-    } else {
-        DailyQuizMainScreen(onStartClick = {
-            isLoading = true
+    when (val state = screenState) {
+        is ScreenState.Welcome -> DailyQuizMainScreen(onStartClick = {
+            screenState = ScreenState.Loading
         })
+        is ScreenState.Loading -> {
+            LoaderScreen()
+            LaunchedEffect(Unit) {
+                val questions = fetchTriviaQuestions()
+                screenState = ScreenState.Quiz(questions)
+            }
+        }
+        is ScreenState.Quiz -> QuizScreen(
+            questions = state.questions,
+            onFinish = { score ->
+                screenState = ScreenState.Result(score, state.questions.size)
+            }
+        )
+        is ScreenState.Result -> ResultScreen(
+            score = state.score,
+            total = state.total,
+            onRestart = {
+                screenState = ScreenState.Loading
+            }
+        )
+
+
     }
 }
 
+sealed class ScreenState {
+    object Welcome : ScreenState()
+    object Loading : ScreenState()
+    data class Quiz(val questions: List<TriviaQuestion>) : ScreenState()
+    data class Result(val score: Int, val total: Int) : ScreenState()
+}
+
+
 @Composable
 fun DailyQuizMainScreen(onStartClick: () -> Unit) {
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -119,7 +149,9 @@ fun DailyQuizMainScreen(onStartClick: () -> Unit) {
                 )
                 Spacer(modifier = Modifier.height(16.dp))
                 Button(
-                    onClick = onStartClick,
+                    onClick = {
+                        onStartClick()
+                    },
                     colors = ButtonDefaults.buttonColors(backgroundColor = BackgroundColor),
                     shape = RoundedCornerShape(12.dp)
                 ) {
@@ -138,11 +170,6 @@ fun DailyQuizMainScreen(onStartClick: () -> Unit) {
 @Composable
 fun LoaderScreen() {
 
-    LaunchedEffect(Unit) {
-        delay(2000L)
-        // Здесь можно будет перейти на следующий экран после загрузки
-        // Пока оставим просто лоадер
-    }
 
     Box(
         modifier = Modifier
