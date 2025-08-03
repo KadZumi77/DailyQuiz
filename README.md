@@ -34,7 +34,7 @@
 Посмотреть видеообзор приложения можно по ссылке:  
 ▶️ [Открыть в Rutube](https://rutube.ru/video/private/731c172100ad75d1ac5a12c58f345779/?p=bzpwQ-nyNpuKK_wtyg1niA)
 
+
 ---
 
-
-
+<img width="10089" height="8291" alt="Frame 1" src="https://github.com/user-attachments/assets/767b64e7-7838-4db6-8af3-1225a7912795" />
