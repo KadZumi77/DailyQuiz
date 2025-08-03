@@ -49,10 +49,11 @@ fun QuizActivityContent() {
         )
         else -> QuizScreen(
             questions = questions,
-            onFinish = { score ->
+            onFinish = { score, results ->
                 correctAnswersCount = score
                 isFinished = true
-            },
+            }
+            ,
             onBack = {
                 activity?.finish()
             }
