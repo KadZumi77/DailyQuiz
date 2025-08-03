@@ -1,6 +1,5 @@
-package com.example.dailyquiz
+package com.example.dailyquiz.screens
 
-import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -19,17 +18,19 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
-import kotlinx.coroutines.delay
 import androidx.compose.foundation.Image
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.dailyquiz.R
 import com.example.dailyquiz.api.TriviaQuestion
 import com.example.dailyquiz.api.fetchTriviaQuestions
 import com.example.dailyquiz.models.QuizHistoryEntry
 import com.example.dailyquiz.ui.theme.BackgroundColor
+import com.example.dailyquiz.viewmodels.HistoryViewModel
 import java.text.SimpleDateFormat
 import java.util.*
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -43,12 +44,14 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppRoot() {
     var screenState by remember { mutableStateOf<ScreenState>(ScreenState.Welcome) }
-    val history = remember { mutableStateListOf<QuizHistoryEntry>() } // ← добавили
+    val history = remember { mutableStateListOf<QuizHistoryEntry>() }
+
+    val historyViewModel: HistoryViewModel = viewModel()
 
     when (val state = screenState) {
         is ScreenState.Welcome -> DailyQuizMainScreen(
             onStartClick = { screenState = ScreenState.Loading },
-            onHistoryClick = { screenState = ScreenState.History }
+            onHistoryClick = { screenState = ScreenState.History(history.toList()) }
         )
         is ScreenState.Loading -> {
             LoaderScreen()
@@ -79,10 +82,17 @@ fun AppRoot() {
             total = state.total,
             onRestart = { screenState = ScreenState.Loading }
         )
-        is ScreenState.History -> HistoryScreen(
-            entries = history,
-            onBack = { screenState = ScreenState.Welcome }
-        )
+        is ScreenState.History -> {
+            // Загрузка истории каждый раз при открытии экрана
+            LaunchedEffect(Unit) {
+                historyViewModel.loadEntries(history)
+            }
+            HistoryScreen(
+                viewModel = historyViewModel,
+                onBack = { screenState = ScreenState.Welcome },
+                onDelete = { entry -> history.remove(entry) }
+            )
+        }
     }
 }
 
@@ -93,8 +103,8 @@ sealed class ScreenState {
     object Loading : ScreenState()
     data class Quiz(val questions: List<TriviaQuestion>) : ScreenState()
     data class Result(val score: Int, val total: Int) : ScreenState()
-//    data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
-    object History : ScreenState()
+    data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
+    //object History : ScreenState()
 
 }
 

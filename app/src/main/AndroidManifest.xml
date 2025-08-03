@@ -16,10 +16,10 @@
         android:theme="@style/Theme.DailyQuiz"
         tools:targetApi="31">
         <activity
-            android:name=".QuizActivity"
+            android:name=".screens.QuizActivity"
             android:exported="false" />
         <activity
-            android:name=".MainActivity"
+            android:name=".screens.MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.DailyQuiz">

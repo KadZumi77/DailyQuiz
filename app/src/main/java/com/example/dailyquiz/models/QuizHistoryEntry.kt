@@ -4,5 +4,5 @@ data class QuizHistoryEntry(
     val title: String,
     val date: String,
     val time: String,
-    val stars: Int // от 0 до 5
+    val stars: Int
 )

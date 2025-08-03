@@ -10,6 +10,7 @@ val BackgroundColor = Color(0xFF7A5FFF)
 val TextScoreColor = Color(0xFFFFB800)
 val CorrectAnswerColor = Color(0xFF00AE3A)
 val IncorrectAnswerColor = Color(0xFFE70000)
+val TimerColor = Color(0xFF2B0063)
 
 val Purple40 = Color(0xFF6650a4)
 val PurpleGrey40 = Color(0xFF625b71)

@@ -1,4 +1,4 @@
-package com.example.dailyquiz
+package com.example.dailyquiz.screens
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
