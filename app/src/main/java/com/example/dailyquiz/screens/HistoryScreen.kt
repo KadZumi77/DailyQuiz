@@ -26,11 +26,17 @@ import com.example.dailyquiz.viewmodels.HistoryViewModel
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onDelete: (QuizHistoryEntry) -> Unit) {
+fun HistoryScreen(
+    viewModel: HistoryViewModel,
+    onBack: () -> Unit,
+    onDelete: (QuizHistoryEntry) -> Unit,
+    onEntryClick: (QuizHistoryEntry) -> Unit
+) {
 
     val historyEntries = viewModel.entries
     var showDeleteDialog by remember { mutableStateOf(false) }
     var deletedEntry by remember { mutableStateOf<QuizHistoryEntry?>(null) }
+    var selectedEntry by remember { mutableStateOf<QuizHistoryEntry?>(null) }
 
 
     Box(
@@ -72,47 +78,90 @@ fun HistoryScreen(viewModel: HistoryViewModel, onBack: () -> Unit, onDelete: (Qu
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(historyEntries, key = { it.hashCode() }) { entry ->
-                    var showMenu by remember { mutableStateOf(false) }
+            if (selectedEntry == null) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(historyEntries, key = { it.hashCode() }) { entry ->
+                        var showMenu by remember { mutableStateOf(false) }
 
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .wrapContentHeight()
-                            .combinedClickable(
-                                onClick = {},
-                                onLongClick = { showMenu = true }
-                            )
-                    ) {
-                        HistoryCard(entry)
-
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(onClick = {
-                                deletedEntry = entry
-                                viewModel.deleteEntry(entry) // Удаляем из ViewModel
-                                onDelete(entry)
-                                showMenu = false
-                                showDeleteDialog = true
-                            }) {
-                                Icon(
-                                    painter = painterResource(id = R.drawable.trash_icon),
-                                    contentDescription = "Удалить",
-                                    tint = Color.Black
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .wrapContentHeight()
+                                .combinedClickable(
+                                    onClick = { onEntryClick(entry) }, // показать детали
+                                    onLongClick = { showMenu = true } // удалить попытку
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Удалить")
+                        ) {
+                            HistoryCard(entry)
+
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(onClick = {
+                                    deletedEntry = entry
+                                    viewModel.deleteEntry(entry)
+                                    onDelete(entry)
+                                    showMenu = false
+                                    showDeleteDialog = true
+                                }) {
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.trash_icon),
+                                        contentDescription = "Удалить",
+                                        tint = Color.Black
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Удалить")
+                                }
                             }
                         }
                     }
                 }
+            } else {
+                // Детали викторины
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    item {
+                        Text(
+                            text = "Результаты викторины: ${selectedEntry?.quizTitle}",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    items(selectedEntry!!.questions) { question ->
+                        Card(
+                            shape = RoundedCornerShape(12.dp),
+                            backgroundColor = Color.White,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Вопрос: ${question.question}")
+                                Text("Ваш ответ: ${question.selectedAnswer}")
+                                Text("Правильно: ${if (question.isCorrect) "Да" else "Нет"}")
+                            }
+                        }
+                    }
+
+                    item {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Button(
+                            onClick = { selectedEntry = null },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.buttonColors(backgroundColor = Color.White)
+                        ) {
+                            Text("Назад", color = BackgroundColor)
+                        }
+                    }
+                }
             }
+
 
         }
     }
@@ -167,6 +216,7 @@ fun HistoryScreenPreview() {
     HistoryScreen(
         viewModel = fakeViewModel,
         onBack = {},
-        onDelete = {}
+        onDelete = {},
+        onEntryClick = {}
     )
 }

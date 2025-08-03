@@ -20,13 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.dailyquiz.R
 import com.example.dailyquiz.api.TriviaQuestion
+import com.example.dailyquiz.components.QuestionCard
+import com.example.dailyquiz.models.QuestionResult
 import com.example.dailyquiz.ui.theme.BackgroundColor
 import com.example.dailyquiz.ui.theme.CorrectAnswerColor
 import com.example.dailyquiz.ui.theme.IncorrectAnswerColor
 import com.example.dailyquiz.ui.theme.TimerColor
 
 @Composable
-fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) -> Unit, onBack: () -> Unit) {
+fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int, results: List<QuestionResult>) -> Unit, onBack: () -> Unit) {
     var currentIndex by remember { mutableStateOf(0) }
     var selectedAnswer by remember { mutableStateOf<String?>(null) }
     var correctCount by remember { mutableStateOf(0) }
@@ -36,11 +38,10 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
     var isTimeUp by remember { mutableStateOf(false) }
     var restartTrigger by remember { mutableStateOf(false) }
     var showExitDialog by remember { mutableStateOf(false) }
+    val answerResults = remember { mutableStateListOf<QuestionResult>() }
 
 
     val question = questions[currentIndex]
-
-
     val allAnswers = remember(question) {
         (question.incorrect_answers + question.correct_answer).shuffled()
     }
@@ -59,8 +60,23 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
         }
     }
 
+
     LaunchedEffect(triggerNext) {
         if (triggerNext) {
+            // Добавляем текущий ответ в список результатов
+            if (selectedAnswer != null) {
+                answerResults.add(
+                    QuestionResult(
+                        question = Html.fromHtml(question.question).toString(),
+                        selectedAnswer = selectedAnswer!!,
+                        isCorrect = selectedAnswer == question.correct_answer,
+                        correctAnswer = question.correct_answer,
+                        allAnswers = (question.incorrect_answers + question.correct_answer).shuffled()
+                    )
+                )
+
+            }
+
             kotlinx.coroutines.delay(1500)
             if (currentIndex + 1 < questions.size) {
                 currentIndex++
@@ -68,7 +84,7 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                 showAnswerResult = false
                 triggerNext = false
             } else {
-                onFinish(correctCount)
+                onFinish(correctCount, answerResults.toList())
             }
         }
     }
@@ -186,7 +202,6 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
     ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -226,6 +241,7 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                     .background(Color.White, RoundedCornerShape(32.dp))
                     .padding(24.dp)
                     .fillMaxWidth()
+                    .heightIn(min = 400.dp, max = 500.dp)
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
 
@@ -272,83 +288,16 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    Text(
-                        text = Html.fromHtml(question.question).toString(),
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
+                    QuestionCard(
+                        questionText = Html.fromHtml(question.question).toString(),
+                        answers = allAnswers,
+                        correctAnswer = question.correct_answer,
+                        selectedAnswer = selectedAnswer,
+                        onSelectAnswer = { selectedAnswer = it },
+                        showAnswerResult = showAnswerResult
                     )
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    allAnswers.forEach { answer ->
-                        val isSelected = selectedAnswer == answer
-                        val isCorrect = answer == question.correct_answer
-
-                        val backgroundColor = when {
-                            showAnswerResult && isSelected && isCorrect -> Color(0xFFDFF5DD)
-                            showAnswerResult && isSelected && !isCorrect -> Color(0xFFFFEAEA)
-                            else -> Color(0xFFF5F5F5)
-                        }
-
-                        val borderColor = when {
-                            showAnswerResult && isSelected && isCorrect -> CorrectAnswerColor
-                            showAnswerResult && isSelected && !isCorrect -> IncorrectAnswerColor
-                            else -> Color.LightGray
-                        }
-
-                        val radioColor = when {
-                            showAnswerResult && isSelected && isCorrect -> CorrectAnswerColor
-                            showAnswerResult && isSelected && !isCorrect -> IncorrectAnswerColor
-                            else -> Color.Gray
-                        }
-
-                        val textColor = Color.Black
-
-                        OutlinedButton(
-                            onClick = { if (!showAnswerResult) selectedAnswer = answer },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                backgroundColor = backgroundColor,
-                                contentColor = textColor
-                            ),
-                            border = BorderStroke(2.dp, borderColor),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 10.dp),
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.Start,
-                                modifier = Modifier.fillMaxWidth()
-                            ) {
-                                RadioButton(
-                                    selected = isSelected,
-                                    onClick = {
-                                        if (!showAnswerResult) selectedAnswer = answer
-                                    },
-                                    colors = RadioButtonDefaults.colors(
-                                        selectedColor = radioColor,
-                                        unselectedColor = radioColor,
-                                        disabledColor = Color.Gray
-                                    )
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text(
-                                    text = answer,
-                                    modifier = Modifier.weight(1f),
-                                    textAlign = TextAlign.Start,
-                                    color = textColor,
-                                )
-                            }
-                        }
-                    }
-
-
-
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
                     Button(
                         onClick = {
@@ -363,7 +312,7 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                         colors = ButtonDefaults.buttonColors(
                             backgroundColor = if (selectedAnswer != null && !showAnswerResult) BackgroundColor else Color.Gray
                         ),
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text("ДАЛЕЕ", color = Color.White, fontWeight = FontWeight.Bold)
@@ -372,7 +321,7 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
             Text(
                 text = "Вернуться к предыдущим вопросам нельзя",
@@ -384,18 +333,26 @@ fun QuizScreen(questions: List<TriviaQuestion>, onFinish: (correctCount: Int) ->
     }
 }
 
-@Preview(showBackground = true)
+@Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun QuizScreenPreview() {
-    val sampleQuestion = TriviaQuestion(
-        question = "Какой язык программирования используется для разработки Android-приложений?",
-        correct_answer = "Kotlin",
-        incorrect_answers = listOf("Swift", "Python", "JavaScript")
+    val fakeQuestions = listOf(
+        TriviaQuestion(
+            question = "Что такое Android?",
+            correct_answer = "Операционная система",
+            incorrect_answers = listOf("Процессор", "Язык программирования", "Браузер")
+        ),
+        TriviaQuestion(
+            question = "Какой язык используется для Android разработки?",
+            correct_answer = "Kotlin",
+            incorrect_answers = listOf("Swift", "JavaScript", "C#")
+        )
     )
 
     QuizScreen(
-        questions = listOf(sampleQuestion),
-        onFinish = {},
+        questions = fakeQuestions,
+        onFinish = { _, _ -> },
         onBack = {}
     )
 }
+

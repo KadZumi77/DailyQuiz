@@ -31,7 +31,7 @@ fun HistoryCard(entry: QuizHistoryEntry) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = entry.title,
+                    text = entry.quizTitle,
                     color = Color(0xFF4B0082),
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
@@ -43,7 +43,7 @@ fun HistoryCard(entry: QuizHistoryEntry) {
                     repeat(5) { index ->
                         Image(
                             painter = painterResource(
-                                id = if (index < entry.stars)
+                                id = if (index < entry.score)
                                     R.drawable.ic_star_filled else R.drawable.ic_star_outline
                             ),
                             contentDescription = null,
@@ -81,10 +81,10 @@ fun HistoryCard(entry: QuizHistoryEntry) {
 fun HistoryCardPreview() {
     HistoryCard(
         entry = QuizHistoryEntry(
-            title = "Quiz 1",
+            quizTitle = "Quiz 1",
             date = "7 июля",
             time = "12:03",
-            stars = 1
+            score = 1
         )
     )
 }

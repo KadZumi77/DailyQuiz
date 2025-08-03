@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
 fun AppRoot() {
     var screenState by remember { mutableStateOf<ScreenState>(ScreenState.Welcome) }
     val history = remember { mutableStateListOf<QuizHistoryEntry>() }
+    var selectedEntry by remember { mutableStateOf<QuizHistoryEntry?>(null) }
 
     val historyViewModel: HistoryViewModel = viewModel()
 
@@ -62,16 +63,15 @@ fun AppRoot() {
         }
         is ScreenState.Quiz -> QuizScreen(
             questions = state.questions,
-            onFinish = { score ->
-                // Сохранение результата
+            onFinish = { score, results ->
                 val quizNumber = history.size + 1
                 val entry = QuizHistoryEntry(
-                    title = "Quiz $quizNumber",
+                    quizTitle = "Quiz $quizNumber",
                     date = getCurrentDate(),
                     time = getCurrentTime(),
-                    stars = calculateStars(score, state.questions.size)
+                    score = score,
+                    questions = results
                 )
-
                 history.add(0, entry)
                 screenState = ScreenState.Result(score, state.questions.size)
             },
@@ -90,8 +90,20 @@ fun AppRoot() {
             HistoryScreen(
                 viewModel = historyViewModel,
                 onBack = { screenState = ScreenState.Welcome },
-                onDelete = { entry -> history.remove(entry) }
+                onDelete = { entry -> history.remove(entry) },
+                onEntryClick = {
+                    selectedEntry = it
+                    screenState = ScreenState.HistoryDetail
+                }
             )
+        }
+        is ScreenState.HistoryDetail -> {
+            selectedEntry?.let { entry ->
+                HistoryDetailScreen(
+                    entry = entry,
+                    onBack = { screenState = ScreenState.History(history.toList()) }
+                )
+            }
         }
     }
 }
@@ -104,6 +116,7 @@ sealed class ScreenState {
     data class Quiz(val questions: List<TriviaQuestion>) : ScreenState()
     data class Result(val score: Int, val total: Int) : ScreenState()
     data class History(val entries: List<QuizHistoryEntry>) : ScreenState()
+    object HistoryDetail : ScreenState()
     //object History : ScreenState()
 
 }
