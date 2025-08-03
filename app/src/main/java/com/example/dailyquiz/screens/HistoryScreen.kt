@@ -30,7 +30,8 @@ fun HistoryScreen(
     viewModel: HistoryViewModel,
     onBack: () -> Unit,
     onDelete: (QuizHistoryEntry) -> Unit,
-    onEntryClick: (QuizHistoryEntry) -> Unit
+    onEntryClick: (QuizHistoryEntry) -> Unit,
+    onStartClick: () -> Unit
 ) {
 
     val historyEntries = viewModel.entries
@@ -79,46 +80,98 @@ fun HistoryScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             if (selectedEntry == null) {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    items(historyEntries, key = { it.hashCode() }) { entry ->
-                        var showMenu by remember { mutableStateOf(false) }
-
-                        Box(
+                if (historyEntries.isEmpty()) {
+                    // Пустой экран истории
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(top = 64.dp),
+                        contentAlignment = Alignment.TopCenter
+                    ) {
+                        Card(
+                            shape = RoundedCornerShape(32.dp),
+                            backgroundColor = Color.White,
+                            elevation = 8.dp,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .wrapContentHeight()
-                                .combinedClickable(
-                                    onClick = { onEntryClick(entry) }, // показать детали
-                                    onLongClick = { showMenu = true } // удалить попытку
-                                )
+                                .padding(horizontal = 16.dp)
                         ) {
-                            HistoryCard(entry)
-
-                            DropdownMenu(
-                                expanded = showMenu,
-                                onDismissRequest = { showMenu = false }
+                            Column(
+                                modifier = Modifier
+                                    .padding(24.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                DropdownMenuItem(onClick = {
-                                    deletedEntry = entry
-                                    viewModel.deleteEntry(entry)
-                                    onDelete(entry)
-                                    showMenu = false
-                                    showDeleteDialog = true
-                                }) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.trash_icon),
-                                        contentDescription = "Удалить",
-                                        tint = Color.Black
+                                Text(
+                                    text = "Вы еще не проходили\nни одной викторины",
+                                    fontSize = 18.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.Black,
+                                    textAlign = TextAlign.Center
+                                )
+
+                                Spacer(modifier = Modifier.height(16.dp))
+
+                                Button(
+                                    onClick = { onStartClick() },
+                                    shape = RoundedCornerShape(16.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        backgroundColor = Color(0xFF6C63FF)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = "НАЧАТЬ ВИКТОРИНУ",
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold
                                     )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Удалить")
                                 }
                             }
                         }
                     }
+                } else {
+
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(16.dp),
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        items(historyEntries, key = { it.hashCode() }) { entry ->
+                            var showMenu by remember { mutableStateOf(false) }
+
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .wrapContentHeight()
+                                    .combinedClickable(
+                                        onClick = { onEntryClick(entry) }, // показать детали
+                                        onLongClick = { showMenu = true } // удалить попытку
+                                    )
+                            ) {
+                                HistoryCard(entry)
+
+                                DropdownMenu(
+                                    expanded = showMenu,
+                                    onDismissRequest = { showMenu = false }
+                                ) {
+                                    DropdownMenuItem(onClick = {
+                                        deletedEntry = entry
+                                        viewModel.deleteEntry(entry)
+                                        onDelete(entry)
+                                        showMenu = false
+                                        showDeleteDialog = true
+                                    }) {
+                                        Icon(
+                                            painter = painterResource(id = R.drawable.trash_icon),
+                                            contentDescription = "Удалить",
+                                            tint = Color.Black
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Удалить")
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                 }
             } else {
                 // Детали викторины
@@ -217,6 +270,7 @@ fun HistoryScreenPreview() {
         viewModel = fakeViewModel,
         onBack = {},
         onDelete = {},
-        onEntryClick = {}
+        onEntryClick = {},
+        onStartClick = {}
     )
 }

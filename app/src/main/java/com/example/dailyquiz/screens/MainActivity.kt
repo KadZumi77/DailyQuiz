@@ -94,7 +94,8 @@ fun AppRoot() {
                 onEntryClick = {
                     selectedEntry = it
                     screenState = ScreenState.HistoryDetail
-                }
+                },
+                onStartClick = { screenState = ScreenState.Loading }
             )
         }
         is ScreenState.HistoryDetail -> {
